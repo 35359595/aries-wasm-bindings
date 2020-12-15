@@ -1,24 +1,24 @@
 const fs = require('fs');
+const wasm = require('./assets/wasm_exec.js');
 var source = fs.readFileSync('./out.wasm');
-var typedArray = new Uint8Array(source);
 
-const env = {
-	memoryBase: 0,
-	tableBase: 0,
-	memory: new WebAssembly.Memory({
-		initial: 256
-	}),
-	table: new WebAssembly.Table({
-		initial: 0,
-		element: 'anyfunc'
-	})
+const go = new Go();
+
+let mod, inst;
+
+var typedArray = new Uint8Array(source);
+WebAssembly.instantiate(source, go.importObject)
+	.then(result => {
+
+		mod = result.module;
+		inst = result.instance;
+}).catch(e => {
+	console.log(e.Message);
+});
+
+async function run() {
+	await go.run(inst);
+	inst = await WebAssembly.intstantiate(mod, go.importObject);
 }
 
-WebAssembly.instantiate(typedArray, {
-	env: env
-}).then(result => {
-	console.log(util.inspect(result, true, 0));
-	console.log(result.instance.exports._hi("John"));
-}).catch(e => {
-	console.log(e);
-});
+run();
